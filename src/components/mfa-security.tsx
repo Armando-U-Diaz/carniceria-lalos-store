@@ -110,9 +110,7 @@ export function MfaSecurity({ isAdmin, requestedNext }: { isAdmin: boolean; requ
     window.location.replace(safePath(requestedNext ?? null, "/perfil"));
   }
 
-  const qrSource = enrollment?.qrCode.startsWith("data:")
-    ? enrollment.qrCode
-    : enrollment ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(enrollment.qrCode)}` : "";
+  const qrSource = enrollment ? safeQrDataUrl(enrollment.qrCode) : "";
 
   if (loading) return <div className="mfa-loading"><LoaderCircle className="spin" size={19} /> Revisando protecci&oacute;n...</div>;
 
@@ -144,4 +142,18 @@ export function MfaSecurity({ isAdmin, requestedNext }: { isAdmin: boolean; requ
       <div><input id="mfa-code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))} placeholder="000000" required /><button className="button primary" disabled={working}>{working ? <LoaderCircle className="spin" size={17} /> : <KeyRound size={17} />} Verificar</button></div>
     </form>}
   </div>;
+}
+
+function safeQrDataUrl(source: string) {
+  const separator = source.indexOf(",");
+  const payload = source.startsWith("data:image/svg+xml") && separator >= 0
+    ? source.slice(separator + 1)
+    : source;
+
+  let svg = payload;
+  if (!payload.trimStart().startsWith("<")) {
+    try { svg = decodeURIComponent(payload); } catch { svg = payload; }
+  }
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
