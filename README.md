@@ -75,12 +75,12 @@ Variables públicas, incluidas en el navegador:
 
 - `NEXT_PUBLIC_SITE_URL`: URL canónica del sitio.
 - `NEXT_PUBLIC_SUPABASE_URL`: URL pública del proyecto Supabase.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: clave pública/anon. Su seguridad depende de RLS.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: usa preferentemente la clave pública moderna `sb_publishable_...`; el nombre de la variable se conserva por compatibilidad. Su seguridad depende de RLS.
 - `NEXT_PUBLIC_GA_MEASUREMENT_ID`: opcional, por ejemplo `G-XXXXXXXXXX`.
 
 Variables exclusivas del servidor, nunca deben comenzar con `NEXT_PUBLIC_`:
 
-- `SUPABASE_SERVICE_ROLE_KEY`: omite RLS. Solo la usan rutas protegidas y conciliación.
+- `SUPABASE_SERVICE_ROLE_KEY`: usa la clave secreta moderna `sb_secret_...` (o `service_role` heredada). Omite RLS y solo debe existir en el servidor.
 - `MERCADO_PAGO_ACCESS_TOKEN`: credencial privada de Mercado Pago.
 - `MERCADO_PAGO_WEBHOOK_SECRET`: secreto de firma de Webhooks.
 - `MERCADO_PAGO_PUBLIC_URL`: URL HTTPS pública utilizada para retornos y notificaciones.
@@ -94,7 +94,7 @@ No guardes `.env.local` en Git. El `.gitignore` ya lo excluye.
 2. Abre **SQL Editor → New query**.
 3. Copia y ejecuta todo `supabase/schema.sql`.
 4. Confirma que la consulta final devuelve seis tablas con `rls_enabled = true`.
-5. Ve a **Project Settings → API / Connect** y copia la URL, la clave pública/anon y la `service_role` en `.env.local`.
+5. Ve a **Project Settings → API Keys** y copia la URL, la clave `sb_publishable_...` y la clave `sb_secret_...` en `.env.local`. Nunca agregues la clave secreta a una variable `NEXT_PUBLIC_*`.
 6. Si las tablas no aparecen por Data API, revisa **Integrations → Data API** y confirma que `public` esté expuesto. El SQL incluye los `GRANT` mínimos además de RLS.
 
 El SQL crea:

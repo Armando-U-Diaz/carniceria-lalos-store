@@ -181,9 +181,9 @@ $$;
 revoke all on function private.set_updated_at() from public, anon, authenticated;
 revoke all on function private.assign_order_number() from public, anon, authenticated;
 revoke all on function private.handle_new_user() from public, anon, authenticated;
-revoke all on function private.is_admin() from public, anon;
-grant usage on schema private to authenticated;
-grant execute on function private.is_admin() to authenticated;
+revoke all on function private.is_admin() from public, anon, authenticated;
+grant usage on schema private to anon, authenticated;
+grant execute on function private.is_admin() to anon, authenticated;
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at before update on public.profiles for each row execute function private.set_updated_at();
