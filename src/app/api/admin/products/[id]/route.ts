@@ -8,7 +8,7 @@ const paramsSchema = z.string().uuid();
 const stockSchema = z.object({ stock: z.number().int().min(0) });
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const context = await getAdminApiContext();
+  const context = await getAdminApiContext(request);
   if (!context) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const id = paramsSchema.safeParse((await params).id);
   const body = adminProductSchema.safeParse(await request.json());
@@ -21,7 +21,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const context = await getAdminApiContext();
+  const context = await getAdminApiContext(request);
   if (!context) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const id = paramsSchema.safeParse((await params).id);
   const body = stockSchema.safeParse(await request.json());
@@ -31,8 +31,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   return NextResponse.json({ product: data });
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const context = await getAdminApiContext();
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const context = await getAdminApiContext(request);
   if (!context) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const id = paramsSchema.safeParse((await params).id);
   if (!id.success) return NextResponse.json({ error: "ID inválido." }, { status: 400 });

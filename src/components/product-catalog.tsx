@@ -16,16 +16,16 @@ export function ProductCatalog({ products, categories }: { products: Product[]; 
   const [sort, setSort] = useState<SortValue>("featured");
 
   useEffect(() => {
-    const applyHashFilter = () => {
-      const params = new URLSearchParams(window.location.hash.split("?")[1] || "");
+    const applyUrlFilter = () => {
+      const params = new URLSearchParams(window.location.search);
       const slug = params.get("categoria");
       setCategory(slug && categories.some((item) => item.slug === slug) ? slug : "all");
     };
-    const timeout = window.setTimeout(applyHashFilter, 0);
-    window.addEventListener("hashchange", applyHashFilter);
+    const timeout = window.setTimeout(applyUrlFilter, 0);
+    window.addEventListener("popstate", applyUrlFilter);
     return () => {
       window.clearTimeout(timeout);
-      window.removeEventListener("hashchange", applyHashFilter);
+      window.removeEventListener("popstate", applyUrlFilter);
     };
   }, [categories]);
 

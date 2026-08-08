@@ -20,7 +20,7 @@ export async function updateSession(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims();
   const path = request.nextUrl.pathname;
-  const isPrivate = path.startsWith("/pedidos") || path.startsWith("/pedido/") || path.startsWith("/admin");
+  const isPrivate = path.startsWith("/perfil") || path.startsWith("/pedidos") || path.startsWith("/pedido/") || path.startsWith("/admin");
 
   if (isPrivate && !data?.claims?.sub) {
     const url = request.nextUrl.clone();

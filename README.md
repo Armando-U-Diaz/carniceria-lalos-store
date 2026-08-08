@@ -6,13 +6,18 @@ La portada puede abrirse sin credenciales en **modo demostración**. El catálog
 
 ## Funciones incluidas
 
+- Perfil privado editable con datos personales, cierre de sesion e historial completo de compras por usuario.
+- Doble verificacion TOTP opcional para clientes y obligatoria para abrir o modificar el panel administrador.
+- Las cuentas solo pueden consultar su propio perfil y sus propios pedidos mediante RLS.
+- Los pedidos solo se crean en el servidor despues de volver a validar productos, stock y precios.
+
 - Portada responsiva con identidad visual propia, hero, beneficios, categorías, historia, contacto y horarios.
 - 25 productos reales de Lalo's en cuatro categorías: res, cerdo, carne molida y pollo.
 - Búsqueda por nombre/descripción, categoría, disponibilidad, destacados y orden por precio/fecha.
 - Productos por kilogramo, medio kilo, pieza, paquete o charola, con variantes y límites de stock.
 - Carrito lateral persistido en `localStorage`; el carrito solo se limpia cuando el pago queda confirmado.
 - Registro, email/contraseña, Google OAuth, recuperación de contraseña, callback PKCE y sesión SSR.
-- Rutas privadas `/pedidos`, `/pedido/[id]` y `/admin`.
+- Rutas privadas `/perfil`, `/pedidos`, `/pedido/[id]` y `/admin`.
 - Historial, detalle, total, entrega, estados de pago y línea de avance del pedido.
 - Sondeo temporal de conciliación al regresar de Mercado Pago.
 - Panel admin con métricas, alta, edición y eliminación de productos, controles rápidos de stock, carga y reemplazo de imágenes, categorías y estados de pedido.
@@ -41,7 +46,7 @@ copy .env.example .env.local
 npm run dev
 ```
 
-Abre `http://localhost:3000`. Sin credenciales verás la tienda en modo demostración.
+Abre `http://localhost:3100`. Sin credenciales verás la tienda en modo demostración.
 
 Comandos de verificación:
 
@@ -57,7 +62,7 @@ npm run start
 Copia `.env.example` a `.env.local` y completa:
 
 ```env
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3100
 
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
@@ -123,7 +128,8 @@ set role = 'admin'
 where id = 'UUID_DEL_USUARIO';
 ```
 
-4. Cierra y vuelve a iniciar sesión; visita `/admin`.
+4. Cierra y vuelve a iniciar sesión; abre `/perfil` y configura la doble verificación.
+5. Confirma el código de tu aplicación autenticadora y visita `/admin`.
 
 Los clientes autenticados no tienen privilegio SQL para modificar la columna `role`. El código tampoco confía en `user_metadata`; cada ruta administrativa vuelve a comprobar `profiles.role` en servidor.
 
@@ -154,8 +160,8 @@ La aplicación genera un nombre UUID, guarda la URL pública y elimina la imagen
 
 En **Authentication → URL Configuration**:
 
-- Site URL local durante desarrollo: `http://localhost:3000`.
-- Redirect URL local: `http://localhost:3000/auth/callback`.
+- Site URL local durante desarrollo: `http://localhost:3100`.
+- Redirect URL local: `http://localhost:3100/auth/callback`.
 - Producción: `https://tu-dominio.com/auth/callback`.
 - Para previews puedes agregar `https://*-tu-equipo.vercel.app/auth/callback`, aunque para compras se recomienda probar con un dominio estable.
 
@@ -167,7 +173,7 @@ En producción cambia Site URL al dominio canónico.
 2. Configura **Google Auth Platform → Branding**, audiencia y pantalla de consentimiento.
 3. Agrega los scopes `openid`, `userinfo.email` y `userinfo.profile`.
 4. Crea un cliente OAuth tipo **Web application**.
-5. En **Authorized JavaScript origins** agrega `http://localhost:3000` y el dominio de producción.
+5. En **Authorized JavaScript origins** agrega `http://localhost:3100` y el dominio de producción.
 6. En **Authorized redirect URIs** agrega el callback que muestra Supabase, normalmente `https://TU_PROJECT_REF.supabase.co/auth/v1/callback` (no el callback de Next.js).
 7. Copia Client ID y Client Secret a **Supabase → Authentication → Providers → Google** y activa el proveedor.
 8. Verifica marca/dominio antes de producción para que la pantalla de consentimiento inspire confianza.
@@ -240,7 +246,7 @@ Si la variable está vacía, no se carga ningún script y los eventos se ignoran
 ## Prueba completa antes de producción
 
 1. Registra y confirma un cliente por correo.
-2. Prueba login, logout, restauración de sesión y recuperación de contraseña.
+2. Prueba login, logout, restauración de sesión, recuperación de contraseña y edición del perfil.
 3. Prueba Google OAuth y el retorno al destino original.
 4. Busca un producto por nombre y descripción; combina categoría, disponibilidad, destacados y orden.
 5. Agrega variantes y varios productos; recarga y confirma persistencia del carrito.
@@ -251,7 +257,7 @@ Si la variable está vacía, no se carga ningún script y los eventos se ignoran
 10. Confirma que el carrito solo se borre con pago `paid`.
 11. Comprueba `/pedidos`, `/pedido/[id]`, estados y sondeo del retorno.
 12. Prueba IDOR: un usuario no debe abrir el pedido de otro.
-13. Como admin, crea/edita/desactiva productos, sube/reemplaza imagen y cambia estados.
+13. Como admin, activa TOTP y confirma que `/admin` exige el código antes de crear, editar o desactivar productos.
 14. Como cliente, intenta acceder a `/admin` y a endpoints `/api/admin/*`.
 15. Revisa GA4 Realtime para búsqueda, carrito, checkout y compra.
 16. Ejecuta TypeScript, ESLint y build; revisa además Lighthouse en móvil.

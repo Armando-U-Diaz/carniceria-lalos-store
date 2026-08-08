@@ -39,3 +39,8 @@ export const adminProductSchema = z.object({
   is_featured: z.boolean(),
   storage_instructions: z.string().trim().min(5).max(500),
 });
+
+export const profileUpdateSchema = z.object({
+  full_name: z.string().trim().min(3, "Escribe tu nombre completo.").max(120, "El nombre es demasiado largo."),
+  phone: z.string().trim().max(20).refine((value) => !value || /^[0-9+()\-\s]{8,20}$/.test(value), "Escribe un teléfono válido."),
+});

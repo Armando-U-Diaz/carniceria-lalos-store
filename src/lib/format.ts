@@ -4,5 +4,9 @@ export const formatCurrency = (value: number) =>
 export const formatDate = (value: string) =>
   new Intl.DateTimeFormat("es-MX", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
-export const safePath = (value: string | null, fallback = "/") =>
-  value && value.startsWith("/") && !value.startsWith("//") ? value : fallback;
+export const safePath = (value: string | null, fallback = "/") => {
+  if (!value || !value.startsWith("/") || value.startsWith("//") || value.includes("\\") || /[\u0000-\u001f]/.test(value)) {
+    return fallback;
+  }
+  return value;
+};

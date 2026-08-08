@@ -13,7 +13,7 @@ export function CategoryStrip({ categories }: { categories: Category[] }) {
       <div className="category-grid">
         {categories.map((category, index) => {
           const Icon = icons[index % icons.length];
-          return <a href={`/#productos?categoria=${category.slug}`} key={category.id}><span><Icon size={25} /></span><strong>{category.name}</strong></a>;
+          return <a href={`/?categoria=${encodeURIComponent(category.slug)}#productos`} key={category.id}><span><Icon size={25} /></span><strong>{category.name}</strong></a>;
         })}
       </div>
     </section>

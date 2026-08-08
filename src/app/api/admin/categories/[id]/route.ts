@@ -5,7 +5,7 @@ import { getAdminApiContext } from "@/lib/api-auth";
 const schema = z.object({ is_active: z.boolean() });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const context = await getAdminApiContext();
+  const context = await getAdminApiContext(request);
   if (!context) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const id = z.string().uuid().safeParse((await params).id);
   const body = schema.safeParse(await request.json());

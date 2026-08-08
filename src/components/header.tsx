@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, ShoppingBag, UserRound, X } from "lucide-react";
+import { Menu, ShoppingBag, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { useCart } from "@/components/cart-provider";
 
@@ -13,7 +14,7 @@ const links = [
   ["Pedidos", "/pedidos"],
 ] as const;
 
-export function Header() {
+export function Header({ account }: { account: ReactNode }) {
   const { itemCount, openCart } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -27,11 +28,11 @@ export function Header() {
 
         <nav className={menuOpen ? "main-nav is-open" : "main-nav"} aria-label="Navegación principal">
           {links.map(([label, href]) => <Link key={label} href={href} onClick={() => setMenuOpen(false)}>{label}</Link>)}
-          <Link className="mobile-account" href="/auth" onClick={() => setMenuOpen(false)}>Mi cuenta</Link>
+          <Link className="mobile-account" href="/perfil" onClick={() => setMenuOpen(false)}>Mi perfil</Link>
         </nav>
 
         <div className="header-actions">
-          <Link className="icon-button account-button" href="/auth" aria-label="Mi cuenta"><UserRound size={19} /></Link>
+          {account}
           <button className="cart-button" onClick={openCart} aria-label={`Abrir carrito, ${itemCount} productos`}>
             <ShoppingBag size={19} />
             <span>Carrito</span>

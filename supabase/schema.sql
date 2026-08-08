@@ -30,6 +30,15 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'profiles_full_name_length' and conrelid = 'public.profiles'::regclass) then
+    alter table public.profiles add constraint profiles_full_name_length check (full_name is null or char_length(btrim(full_name)) between 1 and 120);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'profiles_phone_format' and conrelid = 'public.profiles'::regclass) then
+    alter table public.profiles add constraint profiles_phone_format check (phone is null or phone ~ '^[0-9+() -]{8,20}$');
+  end if;
+end $$;
+
 create table if not exists public.categories (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -158,7 +167,12 @@ set search_path = ''
 as $$
 begin
   insert into public.profiles (id, full_name, avatar_url, role)
-  values (new.id, nullif(new.raw_user_meta_data ->> 'full_name', ''), nullif(new.raw_user_meta_data ->> 'avatar_url', ''), 'customer')
+  values (
+    new.id,
+    coalesce(nullif(btrim(new.raw_user_meta_data ->> 'full_name'), ''), nullif(btrim(new.raw_user_meta_data ->> 'name'), '')),
+    coalesce(nullif(new.raw_user_meta_data ->> 'avatar_url', ''), nullif(new.raw_user_meta_data ->> 'picture', '')),
+    'customer'
+  )
   on conflict (id) do nothing;
   return new;
 end;
@@ -182,8 +196,9 @@ revoke all on function private.set_updated_at() from public, anon, authenticated
 revoke all on function private.assign_order_number() from public, anon, authenticated;
 revoke all on function private.handle_new_user() from public, anon, authenticated;
 revoke all on function private.is_admin() from public, anon, authenticated;
-grant usage on schema private to anon, authenticated;
-grant execute on function private.is_admin() to anon, authenticated;
+revoke usage on schema private from public, anon;
+grant usage on schema private to authenticated;
+grant execute on function private.is_admin() to authenticated;
 
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at before update on public.profiles for each row execute function private.set_updated_at();
@@ -209,20 +224,25 @@ grant select on public.categories, public.products, public.product_variants to a
 grant select on public.profiles to authenticated;
 grant update (full_name, phone, avatar_url, updated_at) on public.profiles to authenticated;
 grant insert, update, delete on public.categories, public.products, public.product_variants to authenticated;
-grant select, insert, update on public.orders to authenticated;
-grant select, insert on public.order_items to authenticated;
+-- Los pedidos solo se crean desde el servidor tras recalcular catalogo, stock y total.
+grant select, update on public.orders to authenticated;
+grant select on public.order_items to authenticated;
 grant usage, select on sequence public.order_number_seq to authenticated;
 
 -- Recrear políticas permite volver a ejecutar el archivo sin duplicados.
 drop policy if exists "profiles_select_own_or_admin" on public.profiles;
-create policy "profiles_select_own_or_admin" on public.profiles for select to authenticated
-using ((select auth.uid()) = id or (select private.is_admin()));
+drop policy if exists "profiles_select_own" on public.profiles;
+create policy "profiles_select_own" on public.profiles for select to authenticated
+using ((select auth.uid()) = id);
 drop policy if exists "profiles_update_own" on public.profiles;
 create policy "profiles_update_own" on public.profiles for update to authenticated
 using ((select auth.uid()) = id) with check ((select auth.uid()) = id);
 
 drop policy if exists "categories_public_read" on public.categories;
-create policy "categories_public_read" on public.categories for select to anon, authenticated using (is_active or (select private.is_admin()));
+drop policy if exists "categories_anon_read" on public.categories;
+drop policy if exists "categories_authenticated_read" on public.categories;
+create policy "categories_anon_read" on public.categories for select to anon using (is_active);
+create policy "categories_authenticated_read" on public.categories for select to authenticated using (is_active or (select private.is_admin()));
 drop policy if exists "categories_admin_insert" on public.categories;
 create policy "categories_admin_insert" on public.categories for insert to authenticated with check ((select private.is_admin()));
 drop policy if exists "categories_admin_update" on public.categories;
@@ -231,7 +251,10 @@ drop policy if exists "categories_admin_delete" on public.categories;
 create policy "categories_admin_delete" on public.categories for delete to authenticated using ((select private.is_admin()));
 
 drop policy if exists "products_public_read" on public.products;
-create policy "products_public_read" on public.products for select to anon, authenticated using (is_available or (select private.is_admin()));
+drop policy if exists "products_anon_read" on public.products;
+drop policy if exists "products_authenticated_read" on public.products;
+create policy "products_anon_read" on public.products for select to anon using (is_available);
+create policy "products_authenticated_read" on public.products for select to authenticated using (is_available or (select private.is_admin()));
 drop policy if exists "products_admin_insert" on public.products;
 create policy "products_admin_insert" on public.products for insert to authenticated with check ((select private.is_admin()));
 drop policy if exists "products_admin_update" on public.products;
@@ -240,7 +263,11 @@ drop policy if exists "products_admin_delete" on public.products;
 create policy "products_admin_delete" on public.products for delete to authenticated using ((select private.is_admin()));
 
 drop policy if exists "variants_public_read" on public.product_variants;
-create policy "variants_public_read" on public.product_variants for select to anon, authenticated
+drop policy if exists "variants_anon_read" on public.product_variants;
+drop policy if exists "variants_authenticated_read" on public.product_variants;
+create policy "variants_anon_read" on public.product_variants for select to anon
+using (is_available and exists (select 1 from public.products p where p.id = product_id and p.is_available));
+create policy "variants_authenticated_read" on public.product_variants for select to authenticated
 using ((is_available and exists (select 1 from public.products p where p.id = product_id and p.is_available)) or (select private.is_admin()));
 drop policy if exists "variants_admin_insert" on public.product_variants;
 create policy "variants_admin_insert" on public.product_variants for insert to authenticated with check ((select private.is_admin()));
@@ -253,8 +280,6 @@ drop policy if exists "orders_select_own_or_admin" on public.orders;
 create policy "orders_select_own_or_admin" on public.orders for select to authenticated
 using ((select auth.uid()) = user_id or (select private.is_admin()));
 drop policy if exists "orders_insert_own_pending" on public.orders;
-create policy "orders_insert_own_pending" on public.orders for insert to authenticated
-with check ((select auth.uid()) = user_id and status = 'pending' and payment_status = 'pending' and mercado_pago_payment_id is null and paid_at is null);
 drop policy if exists "orders_admin_update" on public.orders;
 create policy "orders_admin_update" on public.orders for update to authenticated
 using ((select private.is_admin())) with check ((select private.is_admin()));
@@ -263,8 +288,6 @@ drop policy if exists "order_items_select_owner_or_admin" on public.order_items;
 create policy "order_items_select_owner_or_admin" on public.order_items for select to authenticated
 using (exists (select 1 from public.orders o where o.id = order_id and (o.user_id = (select auth.uid()) or (select private.is_admin()))));
 drop policy if exists "order_items_insert_owner" on public.order_items;
-create policy "order_items_insert_owner" on public.order_items for insert to authenticated
-with check (exists (select 1 from public.orders o where o.id = order_id and o.user_id = (select auth.uid()) and o.payment_status = 'pending'));
 
 -- Bucket público: lectura por URL pública; mutaciones solamente para administradores.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)

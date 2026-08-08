@@ -5,7 +5,7 @@ import { getAdminApiContext } from "@/lib/api-auth";
 const statusSchema = z.object({ status: z.enum(["pending", "confirmed", "preparing", "ready", "delivering", "delivered", "cancelled"]) });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const context = await getAdminApiContext();
+  const context = await getAdminApiContext(request);
   if (!context) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const id = z.string().uuid().safeParse((await params).id);
   const body = statusSchema.safeParse(await request.json());

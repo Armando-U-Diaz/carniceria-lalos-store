@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getAdminApiContext } from "@/lib/api-auth";
+import { exceedsContentLength } from "@/lib/request-security";
 
 const allowedTypes = new Map([["image/jpeg", "jpg"], ["image/png", "png"], ["image/webp", "webp"]]);
 
 export async function POST(request: Request) {
-  const context = await getAdminApiContext();
+  const context = await getAdminApiContext(request);
   if (!context) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+  if (exceedsContentLength(request, 6 * 1024 * 1024)) return NextResponse.json({ error: "El archivo es demasiado grande." }, { status: 413 });
   const formData = await request.formData();
   const file = formData.get("file");
   if (!(file instanceof File)) return NextResponse.json({ error: "Selecciona una imagen." }, { status: 400 });

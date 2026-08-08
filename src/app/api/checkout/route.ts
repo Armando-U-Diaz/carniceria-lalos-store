@@ -4,11 +4,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getServerEnv } from "@/lib/env";
 import { mercadoPagoFetch } from "@/lib/mercado-pago";
+import { exceedsContentLength, isTrustedMutation } from "@/lib/request-security";
 import { checkoutSchema } from "@/lib/validation";
 
 interface PreferenceResponse { id: string; init_point: string; sandbox_init_point: string; }
 
 export async function POST(request: Request) {
+  if (!isTrustedMutation(request)) return NextResponse.json({ error: "Solicitud no permitida." }, { status: 403 });
+  if (exceedsContentLength(request, 64 * 1024)) return NextResponse.json({ error: "La solicitud es demasiado grande." }, { status: 413 });
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getUser();
   if (!authData.user) return NextResponse.json({ error: "Inicia sesión para pagar.", loginUrl: "/auth?next=/" }, { status: 401 });

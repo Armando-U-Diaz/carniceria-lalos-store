@@ -3,7 +3,7 @@ import { getAdminApiContext } from "@/lib/api-auth";
 import { adminProductSchema } from "@/lib/validation";
 
 export async function POST(request: Request) {
-  const context = await getAdminApiContext();
+  const context = await getAdminApiContext(request);
   if (!context) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
   const parsed = adminProductSchema.safeParse(await request.json());
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message || "Datos inválidos." }, { status: 400 });

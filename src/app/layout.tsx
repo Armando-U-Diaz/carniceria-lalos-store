@@ -1,4 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import { UserRound } from "lucide-react";
+import { AccountMenu } from "@/components/account-menu";
 import { Analytics } from "@/components/analytics";
 import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
@@ -24,7 +27,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="es">
       <body>
         <CartProvider>
-          <Header />
+          <Header account={<Suspense fallback={<span className="icon-button account-button" aria-hidden="true"><UserRound size={19} /></span>}><AccountMenu /></Suspense>} />
           <main>{children}</main>
           <CartDrawer demo={demo} />
         </CartProvider>
