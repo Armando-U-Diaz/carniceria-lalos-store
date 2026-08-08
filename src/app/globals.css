@@ -317,6 +317,11 @@ textarea { resize: vertical; }
 .form-message.success { background: #edf8ef; color: var(--success); }
 .spin { animation: spin 1s linear infinite; }
 .access-notice.security { border-color: #d9bd79; background: #fff9e9; }
+.admin-security-gate { display: grid; grid-template-columns: minmax(250px,.8fr) minmax(360px,1.2fr); gap: 26px; align-items: start; margin: -8px 0 28px; padding: 28px; border: 1px solid #d9bd79; background: linear-gradient(135deg,#fffdf7,#fff7df); }
+.admin-security-intro span { color: var(--wine); font-size: 8px; font-weight: 900; letter-spacing: 1.2px; text-transform: uppercase; }
+.admin-security-intro h2 { margin: 9px 0; font: 30px Georgia,serif; }
+.admin-security-intro p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.8; }
+.admin-security-gate .mfa-panel, .admin-security-gate .mfa-loading { margin-top: 0; background: white; }
 .security-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
 .danger-outline { border-color: #e0b8b6; background: white; color: var(--danger); }
 .profile-orders { margin-top: 42px; }
@@ -531,6 +536,8 @@ textarea { resize: vertical; }
   .profile-hero h1 { font-size: 36px; }
   .profile-hero .button { width: 100%; margin-left: 0; }
   .profile-page { padding-top: 28px; }
+  .admin-security-gate { grid-template-columns: 1fr; gap: 18px; padding: 21px; }
+  .admin-security-intro h2 { font-size: 26px; }
   .profile-metrics, .profile-grid { grid-template-columns: 1fr; }
   .profile-metrics { gap: 10px; }
   .profile-card { padding: 22px; }

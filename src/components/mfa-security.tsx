@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { KeyRound, LoaderCircle, QrCode, ShieldCheck } from "lucide-react";
 import { safePath } from "@/lib/format";
@@ -16,7 +15,6 @@ function messageFor(error: unknown) {
 }
 
 export function MfaSecurity({ isAdmin, requestedNext }: { isAdmin: boolean; requestedNext?: string }) {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [factorId, setFactorId] = useState<string | null>(null);
@@ -107,8 +105,9 @@ export function MfaSecurity({ isAdmin, requestedNext }: { isAdmin: boolean; requ
     setCode("");
     setSuccess("Verificación en dos pasos confirmada. Tu sesión está protegida.");
     setWorking(false);
-    router.replace(safePath(requestedNext ?? null, "/perfil"));
-    router.refresh();
+    // A full navigation guarantees that the server reads the new AAL2 session
+    // written by Supabase before it evaluates the protected admin route.
+    window.location.replace(safePath(requestedNext ?? null, "/perfil"));
   }
 
   const qrSource = enrollment?.qrCode.startsWith("data:")
@@ -122,7 +121,7 @@ export function MfaSecurity({ isAdmin, requestedNext }: { isAdmin: boolean; requ
       <span><ShieldCheck size={18} /></span>
       <div>
         <strong>{currentLevel === "aal2" ? "Sesión con doble verificación" : factorId ? "Falta verificar esta sesión" : "Verificación en dos pasos no configurada"}</strong>
-        <p>{isAdmin ? "Es obligatoria para abrir o modificar el panel administrativo." : "Es opcional y protege tu cuenta aunque alguien descubra tu contraseña."}</p>
+        <p>{isAdmin ? "Es obligatoria para abrir o modificar el panel administrativo. Solo tendrás que escribir el código al iniciar una sesión nueva." : "Es opcional y protege tu cuenta aunque alguien descubra tu contraseña."}</p>
       </div>
     </div>
 
@@ -130,7 +129,7 @@ export function MfaSecurity({ isAdmin, requestedNext }: { isAdmin: boolean; requ
     {success && <p className="form-message success" role="status">{success}</p>}
 
     {!factorId && !enrollment && <button className="button secondary" type="button" onClick={startEnrollment} disabled={working}>
-      {working ? <LoaderCircle className="spin" size={17} /> : <QrCode size={17} />} Configurar con una app
+      {working ? <LoaderCircle className="spin" size={17} /> : <QrCode size={17} />} {isAdmin ? "Activar acceso seguro al panel" : "Configurar con una app"}
     </button>}
 
     {enrollment && <div className="mfa-enrollment">

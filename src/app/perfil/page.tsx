@@ -21,6 +21,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
   if (profileError || ordersError || !profileData) throw new Error("No pudimos cargar tu perfil.");
 
   const profile = profileData as Profile;
+  const needsAdminMfa = query.notice === "mfa" && profile.role === "admin";
   const orders = (orderData || []) as Order[];
   const paidOrders = orders.filter((order) => order.payment_status === "paid");
   const totalPurchased = paidOrders.reduce((total, order) => total + Number(order.total), 0);
@@ -39,7 +40,17 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
 
     <section className="profile-page shell">
       {query.notice === "admin" && <div className="access-notice"><ShieldCheck size={20} /><div><strong>Esta cuenta no tiene acceso administrativo.</strong><p>Iniciaste sesi&oacute;n correctamente, pero el panel est&aacute; reservado para administradores.</p></div></div>}
-      {query.notice === "mfa" && <div className="access-notice security"><ShieldCheck size={20} /><div><strong>Confirma tu doble verificaci&oacute;n para continuar.</strong><p>El panel administrativo requiere un c&oacute;digo adicional en cada nueva sesi&oacute;n.</p></div></div>}
+      {needsAdminMfa && <>
+        <div className="access-notice security"><ShieldCheck size={20} /><div><strong>Tu cuenta s&iacute; tiene acceso administrativo.</strong><p>Para proteger productos, existencias y pedidos, completa una sola vez la configuraci&oacute;n del autenticador.</p></div></div>
+        <section className="admin-security-gate" aria-labelledby="admin-security-title">
+          <div className="admin-security-intro">
+            <span>Paso de seguridad</span>
+            <h2 id="admin-security-title">Activa el acceso al panel</h2>
+            <p>Usa Google Authenticator, Microsoft Authenticator o cualquier aplicaci&oacute;n compatible. Escanea el c&oacute;digo QR y escribe el c&oacute;digo de seis d&iacute;gitos; despu&eacute;s entrar&aacute;s directamente a Administraci&oacute;n.</p>
+          </div>
+          <MfaSecurity isAdmin requestedNext="/admin" />
+        </section>
+      </>}
 
       <div className="profile-metrics">
         <article><span><ShoppingBag size={20} /></span><div><small>Pedidos</small><strong>{orders.length}</strong></div></article>
@@ -60,7 +71,7 @@ export default async function ProfilePage({ searchParams }: { searchParams: Prom
             <div><dt>M&eacute;todo de acceso</dt><dd>{providerCopy}</dd></div>
             {user?.last_sign_in_at && <div><dt>&Uacute;ltimo acceso</dt><dd>{formatDate(user.last_sign_in_at)}</dd></div>}
           </dl>
-          <MfaSecurity isAdmin={profile.role === "admin"} requestedNext={safePath(query.next ?? null, "/perfil")} />
+          {!needsAdminMfa && <MfaSecurity isAdmin={profile.role === "admin"} requestedNext={safePath(query.next ?? null, "/perfil")} />}
           <div className="security-actions">
             <Link className="button secondary" href="/auth?mode=reset"><KeyRound size={17} /> Cambiar contrase&ntilde;a</Link>
             <form action="/auth/signout" method="post"><button className="button danger-outline"><LogOut size={17} /> Cerrar sesi&oacute;n</button></form>
