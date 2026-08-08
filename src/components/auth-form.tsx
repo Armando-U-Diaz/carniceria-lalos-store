@@ -44,7 +44,7 @@ export function AuthForm() {
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!configured || googleEnabled === false) return;
+    if (!configured) return;
     setLoading("form"); setError(""); setMessage("");
     const supabase = createClient();
     try {
@@ -127,7 +127,7 @@ export function AuthForm() {
 function translateAuthError(message: string) {
   if (message.includes("Invalid login credentials")) return "El correo o la contraseña no coinciden.";
   if (message.includes("already registered")) return "Este correo ya tiene una cuenta.";
-  if (message.includes("Password should")) return "La contraseña debe tener al menos 8 caracteres.";
+  if (message.includes("Password should")) return "La contraseña debe tener al menos 10 caracteres e incluir mayúscula, minúscula, número y símbolo.";
   if (message.includes("provider is not enabled") || message.includes("Unsupported provider")) return "El acceso con Google aún no está habilitado. Intenta con correo mientras terminamos la configuración.";
   return message;
 }
