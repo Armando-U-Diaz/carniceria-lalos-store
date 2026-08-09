@@ -59,7 +59,7 @@ create table if not exists public.products (
   price numeric(12,2) not null check (price > 0),
   sale_unit public.sale_unit not null,
   approximate_weight numeric(8,3) check (approximate_weight is null or approximate_weight > 0),
-  stock integer not null default 0 check (stock >= 0),
+  stock numeric(12,3) not null default 0 check (stock >= 0),
   is_available boolean not null default true,
   is_featured boolean not null default false,
   storage_instructions text not null default 'Mantener refrigerado entre 0 y 4 °C.',
@@ -74,7 +74,7 @@ create table if not exists public.product_variants (
   weight numeric(8,3) check (weight is null or weight > 0),
   unit public.sale_unit not null,
   price numeric(12,2) not null check (price > 0),
-  stock integer not null default 0 check (stock >= 0),
+  stock numeric(12,3) not null default 0 check (stock >= 0),
   is_available boolean not null default true,
   unique (product_id, name)
 );
@@ -118,7 +118,8 @@ create table if not exists public.order_items (
   product_variant_id uuid references public.product_variants(id) on delete set null,
   product_name text not null,
   variant_name text,
-  quantity integer not null check (quantity > 0 and quantity <= 50),
+  sale_unit public.sale_unit not null,
+  quantity numeric(10,3) not null check (quantity > 0 and quantity <= 50 and (sale_unit = 'kg' or quantity = trunc(quantity))),
   unit_price numeric(12,2) not null check (unit_price > 0),
   subtotal numeric(12,2) generated always as (quantity * unit_price) stored,
   created_at timestamptz not null default now(),

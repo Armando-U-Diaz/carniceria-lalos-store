@@ -107,6 +107,7 @@ export function AuthForm() {
       <div className="auth-heading"><p className="eyebrow"><span /> Mi cuenta</p><h1>{title}</h1><p>{subtitle}</p></div>
       {!configured && <div className="config-notice"><strong>Modo demostración</strong><p>La autenticación estará disponible al configurar las variables de Supabase indicadas en <code>.env.example</code>.</p></div>}
       {params.get("notice") === "config" && configured && <p className="form-error">Inicia sesión para continuar.</p>}
+      {params.get("notice") === "cart" && <p className="form-error" role="alert">Inicia sesión para elegir la cantidad y agregar productos al carrito.</p>}
       {params.get("notice") === "signed-out" && <p className="form-success" role="status">Tu sesión se cerró correctamente.</p>}
       {params.get("error") === "callback" && <p className="form-error" role="alert">El enlace de acceso expiró o no pudo validarse. Intenta nuevamente.</p>}
       {params.get("error") === "oauth" && <p className="form-error" role="alert">Google canceló o rechazó el acceso. Puedes intentarlo otra vez.</p>}

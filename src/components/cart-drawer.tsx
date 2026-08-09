@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useCart } from "@/components/cart-provider";
 import { trackEvent } from "@/lib/analytics";
 import { formatCurrency } from "@/lib/format";
+import { formatQuantity, isWeightedUnit, roundMoney, WEIGHT_STEP_KG } from "@/lib/quantity";
 import type { DeliveryDetails } from "@/types/domain";
 
 const emptyDetails: DeliveryDetails = {
@@ -29,6 +30,11 @@ export function CartDrawer({ demo }: { demo: boolean }) {
   const deliveryFee = details.deliveryMethod === "delivery" ? 79 : 0;
 
   const startCheckout = () => {
+    if (!cart.authenticated) {
+      router.push("/auth?notice=cart&next=%2F%23productos");
+      cart.closeCart();
+      return;
+    }
     setCheckout(true);
     trackEvent("begin_checkout", { currency: "MXN", value: cart.subtotal, items: cart.items.map((item) => ({ item_id: item.productId, item_name: item.name, quantity: item.quantity })) });
   };
@@ -49,7 +55,7 @@ export function CartDrawer({ demo }: { demo: boolean }) {
       });
       const payload = await response.json() as { checkoutUrl?: string; error?: string; loginUrl?: string };
       if (response.status === 401) {
-        router.push(payload.loginUrl || "/auth?next=/");
+        router.push(payload.loginUrl || "/auth?notice=cart&next=%2F%23productos");
         cart.closeCart();
         return;
       }
@@ -78,7 +84,7 @@ export function CartDrawer({ demo }: { demo: boolean }) {
               {cart.items.length === 0 ? <div className="cart-empty"><span><ShoppingBag size={28} /></span><h3>Tu canasta está vacía</h3><p>Elige un buen corte y nosotros nos encargamos de prepararlo.</p><button className="button primary" onClick={cart.closeCart}>Explorar productos</button></div> : cart.items.map((item) => (
                 <article className="cart-line" key={item.key}>
                   <div className="cart-line-image"><Image src={item.imageUrl} alt="" fill sizes="84px" /></div>
-                  <div className="cart-line-copy"><strong>{item.name}</strong><small>{item.presentation}</small><b>{formatCurrency(item.unitPrice)}</b><div className="quantity-control"><button onClick={() => cart.setQuantity(item.key, item.quantity - 1)} aria-label="Disminuir cantidad"><Minus size={14} /></button><span>{item.quantity}</span><button onClick={() => cart.setQuantity(item.key, item.quantity + 1)} disabled={item.quantity >= item.stock} aria-label="Aumentar cantidad"><Plus size={14} /></button></div></div>
+                  <div className="cart-line-copy"><strong>{item.name}</strong><small>{item.presentation} · {formatCurrency(item.unitPrice)} / {isWeightedUnit(item.saleUnit) ? "kg" : "unidad"}</small><b>{formatCurrency(roundMoney(item.unitPrice * item.quantity))}</b><div className="quantity-control"><button onClick={() => cart.setQuantity(item.key, item.quantity - (isWeightedUnit(item.saleUnit) ? WEIGHT_STEP_KG : 1))} aria-label={isWeightedUnit(item.saleUnit) ? "Disminuir 50 gramos" : "Disminuir cantidad"}><Minus size={14} /></button><span>{formatQuantity(item.quantity, item.saleUnit)}</span><button onClick={() => cart.setQuantity(item.key, item.quantity + (isWeightedUnit(item.saleUnit) ? WEIGHT_STEP_KG : 1))} disabled={item.quantity >= item.stock} aria-label={isWeightedUnit(item.saleUnit) ? "Aumentar 50 gramos" : "Aumentar cantidad"}><Plus size={14} /></button></div></div>
                   <button className="remove-line" onClick={() => cart.removeItem(item.key)} aria-label={`Eliminar ${item.name}`}><Trash2 size={17} /></button>
                 </article>
               ))}

@@ -7,6 +7,7 @@ import { CartDrawer } from "@/components/cart-drawer";
 import { CartProvider } from "@/components/cart-provider";
 import { Header } from "@/components/header";
 import { hasSupabaseEnv } from "@/lib/env";
+import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
@@ -21,12 +22,18 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = { themeColor: "#5d101b", colorScheme: "light" };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const demo = !hasSupabaseEnv();
+  let authenticated = false;
+  if (!demo) {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getClaims();
+    authenticated = Boolean(data?.claims?.sub);
+  }
   return (
     <html lang="es">
       <body>
-        <CartProvider>
+        <CartProvider authenticated={authenticated}>
           <Header account={<Suspense fallback={<span className="icon-button account-button" aria-hidden="true"><UserRound size={19} /></span>}><AccountMenu /></Suspense>} />
           <main>{children}</main>
           <CartDrawer demo={demo} />

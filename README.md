@@ -2,7 +2,7 @@
 
 Tienda completa para una carnicería mexicana, construida con Next.js App Router, React, TypeScript, Supabase y Mercado Pago Checkout Pro. Incluye catálogo, búsqueda y filtros en tiempo real, carrito persistente, autenticación, pedidos, seguimiento, administración, carga de imágenes, Analytics y una instalación SQL idempotente.
 
-La portada puede abrirse sin credenciales en **modo demostración**. El catálogo y el carrito funcionan con datos locales; autenticación, pedidos, panel, Storage y pagos se activan al conectar los servicios.
+La portada puede abrirse sin credenciales en **modo demostración**. El catálogo funciona con datos locales; el carrito requiere una sesión iniciada y la autenticación, pedidos, panel, Storage y pagos se activan al conectar los servicios.
 
 ## Funciones incluidas
 
@@ -10,12 +10,14 @@ La portada puede abrirse sin credenciales en **modo demostración**. El catálog
 - Doble verificacion TOTP opcional para clientes y obligatoria para abrir o modificar el panel administrador.
 - Las cuentas solo pueden consultar su propio perfil y sus propios pedidos mediante RLS.
 - Los pedidos solo se crean en el servidor despues de volver a validar productos, stock y precios.
+- Los visitantes pueden consultar el catálogo, pero no pueden guardar ni agregar productos al carrito hasta iniciar sesión.
 
 - Portada responsiva con identidad visual propia, hero, beneficios, categorías, historia, contacto y horarios.
 - 25 productos reales de Lalo's en cuatro categorías: res, cerdo, carne molida y pollo.
 - Búsqueda por nombre/descripción, categoría, disponibilidad, destacados y orden por precio/fecha.
 - Productos por kilogramo, medio kilo, pieza, paquete o charola, con variantes y límites de stock.
-- Carrito lateral persistido en `localStorage`; el carrito solo se limpia cuando el pago queda confirmado.
+- Compra por peso (gramos o kilogramos) o por presupuesto en MXN; el peso se redondea al gramo más cercano.
+- Carrito lateral privado persistido en `localStorage` solo durante una sesión autenticada; al cerrar sesión se elimina la copia local.
 - Registro, email/contraseña, Google OAuth, recuperación de contraseña, callback PKCE y sesión SSR.
 - Rutas privadas `/perfil`, `/pedidos`, `/pedido/[id]` y `/admin`.
 - Historial, detalle, total, entrega, estados de pago y línea de avance del pedido.
@@ -110,6 +112,8 @@ El SQL crea:
 - políticas RLS y privilegios de columna;
 - bucket `product-images` con límite de 5 MB y MIME JPEG/PNG/WebP;
 - datos de ejemplo idempotentes.
+
+Las existencias y cantidades de productos por kilogramo usan `numeric` con tres decimales: `0.500` representa medio kilo y `0.060` representa 60 gramos. Los productos por pieza, paquete o charola conservan cantidades enteras.
 
 ### Crear el primer administrador
 
@@ -249,18 +253,19 @@ Si la variable está vacía, no se carga ningún script y los eventos se ignoran
 2. Prueba login, logout, restauración de sesión, recuperación de contraseña y edición del perfil.
 3. Prueba Google OAuth y el retorno al destino original.
 4. Busca un producto por nombre y descripción; combina categoría, disponibilidad, destacados y orden.
-5. Agrega variantes y varios productos; recarga y confirma persistencia del carrito.
-6. Intenta superar el stock y confirma el límite.
-7. Elige entrega y recolección; valida campos obligatorios.
-8. Inicia pago aprobado, pendiente y rechazado con credenciales/tarjetas de prueba.
-9. Confirma que monto y moneda coincidan, que el webhook aparezca con HTTP 200 y que eventos repetidos no dupliquen el pago.
-10. Confirma que el carrito solo se borre con pago `paid`.
-11. Comprueba `/pedidos`, `/pedido/[id]`, estados y sondeo del retorno.
-12. Prueba IDOR: un usuario no debe abrir el pedido de otro.
-13. Como admin, activa TOTP y confirma que `/admin` exige el código antes de crear, editar o desactivar productos.
-14. Como cliente, intenta acceder a `/admin` y a endpoints `/api/admin/*`.
-15. Revisa GA4 Realtime para búsqueda, carrito, checkout y compra.
-16. Ejecuta TypeScript, ESLint y build; revisa además Lighthouse en móvil.
+5. Sin iniciar sesión, intenta agregar un producto y confirma que la tienda te envía al acceso sin modificar el carrito.
+6. Con sesión iniciada, prueba 500 g, 750 g, 60 g y una compra por presupuesto; recarga y confirma persistencia del carrito.
+7. Agrega variantes y varios productos; intenta superar el stock y confirma el límite.
+8. Elige entrega y recolección; valida campos obligatorios.
+9. Inicia pago aprobado, pendiente y rechazado con credenciales/tarjetas de prueba.
+10. Confirma que monto y moneda coincidan, que el webhook aparezca con HTTP 200 y que eventos repetidos no dupliquen el pago.
+11. Confirma que el carrito solo se borre con pago `paid` o al cerrar sesión.
+12. Comprueba `/pedidos`, `/pedido/[id]`, estados y sondeo del retorno.
+13. Prueba IDOR: un usuario no debe abrir el pedido de otro.
+14. Como admin, activa TOTP y confirma que `/admin` exige el código antes de crear, editar o desactivar productos.
+15. Como cliente, intenta acceder a `/admin` y a endpoints `/api/admin/*`.
+16. Revisa GA4 Realtime para búsqueda, carrito, checkout y compra.
+17. Ejecuta TypeScript, ESLint y build; revisa además Lighthouse en móvil.
 
 ## Arquitectura
 
@@ -279,6 +284,7 @@ src/
     auth.ts               guardas de página
     api-auth.ts           guarda administrativa para endpoints
     mercado-pago.ts       API, firma, estados y conciliación
+    quantity.ts           precisión, redondeo y formato de peso
     validation.ts         esquemas Zod
   types/                  tipos de dominio
 supabase/schema.sql       base, RLS, Storage y semillas

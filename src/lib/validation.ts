@@ -1,11 +1,17 @@
 import { z } from "zod";
+import { hasAtMostThreeDecimals } from "@/lib/quantity";
+
+const preciseQuantity = z.number().finite().positive().max(50)
+  .refine(hasAtMostThreeDecimals, "La cantidad solo puede tener precisión de hasta un gramo.");
+const preciseStock = z.coerce.number().finite().min(0).max(100000)
+  .refine(hasAtMostThreeDecimals, "El stock solo puede tener tres decimales.");
 
 export const checkoutSchema = z
   .object({
     items: z.array(z.object({
       productId: z.string().uuid(),
       variantId: z.string().uuid().nullable(),
-      quantity: z.number().int().min(1).max(50),
+      quantity: preciseQuantity,
     })).min(1).max(50),
     customerName: z.string().trim().min(3).max(120),
     customerPhone: z.string().trim().regex(/^[0-9+()\-\s]{8,20}$/),
@@ -34,10 +40,14 @@ export const adminProductSchema = z.object({
   price: z.coerce.number().positive().max(100000),
   sale_unit: z.enum(["kg", "medio_kg", "pieza", "paquete", "charola"]),
   approximate_weight: z.coerce.number().positive().nullable(),
-  stock: z.coerce.number().int().min(0).max(100000),
+  stock: preciseStock,
   is_available: z.boolean(),
   is_featured: z.boolean(),
   storage_instructions: z.string().trim().min(5).max(500),
+}).superRefine((data, ctx) => {
+  if (data.sale_unit !== "kg" && !Number.isInteger(data.stock)) {
+    ctx.addIssue({ code: "custom", path: ["stock"], message: "Los productos por pieza o paquete requieren stock entero." });
+  }
 });
 
 export const profileUpdateSchema = z.object({

@@ -3,9 +3,13 @@ import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getAdminApiContext } from "@/lib/api-auth";
 import { adminProductSchema } from "@/lib/validation";
+import { hasAtMostThreeDecimals } from "@/lib/quantity";
 
 const paramsSchema = z.string().uuid();
-const stockSchema = z.object({ stock: z.number().int().min(0) });
+const stockSchema = z.object({
+  stock: z.number().finite().min(0).max(100000)
+    .refine(hasAtMostThreeDecimals, "El stock solo puede tener tres decimales."),
+});
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const context = await getAdminApiContext(request);

@@ -63,6 +63,7 @@ export interface CartItem {
   unitPrice: number;
   quantity: number;
   stock: number;
+  saleUnit: SaleUnit;
 }
 
 export interface DeliveryDetails {
@@ -105,6 +106,7 @@ export interface OrderItem {
   product_variant_id: string | null;
   product_name: string;
   variant_name: string | null;
+  sale_unit: SaleUnit;
   quantity: number;
   unit_price: number;
   subtotal: number;
